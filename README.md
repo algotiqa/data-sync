@@ -17,6 +17,7 @@ The tool provides four commands:
 | `import`  | import the data of a DDF file into a database table            |
 | `run`     | execute the SQL statements contained in a plain text file      |
 | `migrate` | apply a set of pending `.sql`/`.ddf` migration files in order  |
+| `version` | print the software version                                     |
 
 ## Requirements
 
@@ -132,6 +133,22 @@ column, single record) in the target database. It then scans the
 After a file is applied successfully its version is recorded in the
 `migration` table, inside a transaction. Any other file extension, or a file
 whose name does not start with a numeric version, aborts the run.
+
+### `version`
+
+```
+data-sync version
+```
+
+Prints the software version. It has no flags and does not need a database
+connection.
+
+The version defaults to `dev`; it can be set at build time with the `-ldflags`
+flag of the Go compiler:
+
+```sh
+go build -ldflags "-X github.com/algotiqa/data-sync/pkg/command/version.version=1.2.3" -o data-sync .
+```
 
 ## Examples
 
