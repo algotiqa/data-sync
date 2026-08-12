@@ -16,7 +16,7 @@ builds:
       - arm64
     binary: data-sync
     ldflags:
-      - -X pkg/command/version/version.version={{.Version}}
+      - -X github.com/algotiqa/data-sync/pkg/command/version/version.version={{.Version}}
 
 archives:
   - formats: [ "tar.gz" ]
