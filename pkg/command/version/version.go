@@ -22,39 +22,35 @@
 // DEALINGS IN THE SOFTWARE.
 //=============================================================================
 
-package main
+package version
 
 import (
-	"log/slog"
-	"os"
-
-	"github.com/algotiqa/data-sync/pkg/command/export"
-	import_ "github.com/algotiqa/data-sync/pkg/command/import"
-	"github.com/algotiqa/data-sync/pkg/command/migrate"
-	"github.com/algotiqa/data-sync/pkg/command/run"
-	"github.com/algotiqa/data-sync/pkg/command/version"
 	"github.com/spf13/cobra"
 )
 
 //=============================================================================
 
-func main() {
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, nil)))
+var version = "dev"
 
-	rootCmd := &cobra.Command{
-		Use  : "data-sync",
-		Short: "Import and export database table data in the DDF format",
+//=============================================================================
+
+func NewVersionCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use  : "version",
+		Short: "Print the software version",
+		RunE : func(cmd *cobra.Command, args []string) error {
+			return runVersion()
+		},
 	}
 
-	rootCmd.AddCommand(version.NewVersionCmd())
-	rootCmd.AddCommand(export .NewExportCmd())
-	rootCmd.AddCommand(import_.NewImportCmd())
-	rootCmd.AddCommand(run    .NewRunCmd())
-	rootCmd.AddCommand(migrate.NewMigrateCmd())
+	return cmd
+}
 
-	if err := rootCmd.Execute(); err != nil {
-		os.Exit(1)
-	}
+//=============================================================================
+
+func runVersion() error {
+	println("Version: "+ version)
+	return nil
 }
 
 //=============================================================================
