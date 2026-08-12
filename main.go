@@ -28,6 +28,9 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/algotiqa/data-sync/pkg/command/export"
+	import_ "github.com/algotiqa/data-sync/pkg/command/import"
+	"github.com/algotiqa/data-sync/pkg/command/run"
 	"github.com/spf13/cobra"
 )
 
@@ -41,8 +44,9 @@ func main() {
 		Short: "Import and export database table data in the DDF format",
 	}
 
-	rootCmd.AddCommand(newExportCmd())
-	rootCmd.AddCommand(newImportCmd())
+	rootCmd.AddCommand(export .NewExportCmd())
+	rootCmd.AddCommand(import_.NewImportCmd())
+	rootCmd.AddCommand(run    .NewRunCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

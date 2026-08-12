@@ -22,7 +22,7 @@
 // DEALINGS IN THE SOFTWARE.
 //=============================================================================
 
-package main
+package import_
 
 import (
 	"bufio"
@@ -32,6 +32,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/algotiqa/data-sync/pkg/command"
 	"github.com/algotiqa/data-sync/pkg/ddf"
 	"github.com/spf13/cobra"
 )
@@ -39,7 +40,7 @@ import (
 //=============================================================================
 
 type importOptions struct {
-	connOptions
+	command.ConnOptions
 	file            string
 	table           string
 	compress        bool
@@ -48,7 +49,7 @@ type importOptions struct {
 
 //=============================================================================
 
-func newImportCmd() *cobra.Command {
+func NewImportCmd() *cobra.Command {
 	o := &importOptions{}
 
 	cmd := &cobra.Command{
@@ -59,7 +60,7 @@ func newImportCmd() *cobra.Command {
 		},
 	}
 
-	addConnFlags(cmd, &o.connOptions)
+	command.AddConnFlags(cmd, &o.ConnOptions)
 	cmd.Flags().StringVar(&o.file,            "file",              "",    "input DDF file ('-' for stdin)")
 	cmd.Flags().StringVar(&o.table,           "table",             "",    "target table (default: the table declared in the file)")
 	cmd.Flags().BoolVar  (&o.compress,        "compress",          false, "decompress the input with gzip")
@@ -75,9 +76,9 @@ func runImport(o *importOptions) error {
 		return errors.New("--file is required")
 	}
 
-	o.resolvePort()
+	o.ResolvePort()
 
-	db, err := connect(&o.connOptions)
+	db, err := command.Connect(&o.ConnOptions)
 	if err != nil {
 		return err
 	}
@@ -93,7 +94,7 @@ func runImport(o *importOptions) error {
 
 	count, err := ddf.Import(ddf.ImportConfig{
 		DB:         db,
-		IsPostgres: o.dbType == "postgres",
+		IsPostgres: o.DbType == "postgres",
 		Table:      o.table,
 		Listener:   listener,
 	}, r, false)

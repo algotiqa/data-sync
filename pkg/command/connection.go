@@ -22,7 +22,7 @@
 // DEALINGS IN THE SOFTWARE.
 //=============================================================================
 
-package main
+package command
 
 import (
 	"database/sql"
@@ -39,29 +39,29 @@ import (
 // connOptions holds the flags needed to connect to a database.
 //=============================================================================
 
-type connOptions struct {
-	dbType   string
-	host     string
-	port     int
-	user     string
-	password string
-	database string
-	dsn      string
+type ConnOptions struct {
+	DbType   string
+	Host     string
+	Port     int
+	User     string
+	Password string
+	Database string
+	Dsn      string
 }
 
 //=============================================================================
 // resolvePort fills the default port when it was not specified.
 //=============================================================================
 
-func (o *connOptions) resolvePort() {
-	if o.port != 0 {
+func (o *ConnOptions) ResolvePort() {
+	if o.Port != 0 {
 		return
 	}
 
-	if o.dbType == "postgres" {
-		o.port = 5432
+	if o.DbType == "postgres" {
+		o.Port = 5432
 	} else {
-		o.port = 3306
+		o.Port = 3306
 	}
 }
 
@@ -71,7 +71,7 @@ func (o *connOptions) resolvePort() {
 // flag takes precedence over the environment one.
 //=============================================================================
 
-func addConnFlags(cmd *cobra.Command, o *connOptions) {
+func AddConnFlags(cmd *cobra.Command, o *ConnOptions) {
 	port := 0
 	if v := os.Getenv("DB_PORT"); v != "" {
 		if p, err := strconv.Atoi(v); err == nil {
@@ -79,13 +79,13 @@ func addConnFlags(cmd *cobra.Command, o *connOptions) {
 		}
 	}
 
-	cmd.Flags().StringVar(&o.dbType,   "dbtype",   envOrDefault("DB_TYPE", "mysql"), "database type: mysql, postgres")
-	cmd.Flags().StringVar(&o.host,     "host",     envOrDefault("DB_HOST", "127.0.0.1"), "database host")
-	cmd.Flags().IntVar   (&o.port,     "port",     port, "database port (default depends on --dbtype)")
-	cmd.Flags().StringVar(&o.user,     "user",     envOrDefault("DB_USER", "root"), "database user")
-	cmd.Flags().StringVar(&o.password, "password", envOrDefault("DB_PASSWORD", ""), "database password")
-	cmd.Flags().StringVar(&o.database, "db",       envOrDefault("DB_NAME", ""), "database name")
-	cmd.Flags().StringVar(&o.dsn,      "dsn",      os.Getenv("DB_DSN"), "full connection string (overrides the single flags)")
+	cmd.Flags().StringVar(&o.DbType,   "dbtype",   envOrDefault("DB_TYPE", "mysql"), "database type: mysql, postgres")
+	cmd.Flags().StringVar(&o.Host,     "host",     envOrDefault("DB_HOST", "127.0.0.1"), "database host")
+	cmd.Flags().IntVar   (&o.Port,     "port",     port, "database port (default depends on --dbtype)")
+	cmd.Flags().StringVar(&o.User,     "user",     envOrDefault("DB_USER", "root"), "database user")
+	cmd.Flags().StringVar(&o.Password, "password", envOrDefault("DB_PASSWORD", ""), "database password")
+	cmd.Flags().StringVar(&o.Database, "db",       envOrDefault("DB_NAME", ""), "database name")
+	cmd.Flags().StringVar(&o.Dsn,      "dsn",      os.Getenv("DB_DSN"), "full connection string (overrides the single flags)")
 }
 
 //=============================================================================
@@ -105,32 +105,30 @@ func envOrDefault(name, fallback string) string {
 // connect opens and pings a database connection matching the given options.
 //=============================================================================
 
-func connect(o *connOptions) (*sql.DB, error) {
+func Connect(o *ConnOptions) (*sql.DB, error) {
 	var driver, dsn string
 
-	switch o.dbType {
+	switch o.DbType {
 		case "mysql":
 			driver = "mysql"
 
-			if o.dsn == "" {
-				dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=true&loc=UTC",
-					o.user, o.password, o.host, o.port, o.database)
+			if o.Dsn == "" {
+				dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=true&loc=UTC", o.User, o.Password, o.Host, o.Port, o.Database)
 			} else {
-				dsn = o.dsn
+				dsn = o.Dsn
 			}
 
 		case "postgres":
 			driver = "pgx"
 
-			if o.dsn == "" {
-				dsn = fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable",
-					o.user, o.password, o.host, o.port, o.database)
+			if o.Dsn == "" {
+				dsn = fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", o.User, o.Password, o.Host, o.Port, o.Database)
 			} else {
-				dsn = o.dsn
+				dsn = o.Dsn
 			}
 
 		default:
-			return nil, fmt.Errorf("unsupported database type %q (must be 'mysql' or 'postgres')", o.dbType)
+			return nil, fmt.Errorf("unsupported database type %q (must be 'mysql' or 'postgres')", o.DbType)
 	}
 
 	db, err := sql.Open(driver, dsn)

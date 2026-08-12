@@ -22,7 +22,7 @@
 // DEALINGS IN THE SOFTWARE.
 //=============================================================================
 
-package main
+package export
 
 import (
 	"context"
@@ -30,6 +30,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/algotiqa/data-sync/pkg/command"
 	"github.com/algotiqa/data-sync/pkg/ddf"
 	"github.com/spf13/cobra"
 )
@@ -37,14 +38,16 @@ import (
 //=============================================================================
 
 type exportOptions struct {
-	connOptions
+	command.ConnOptions
 	query    string
 	table    string
 	file     string
 	compress bool
 }
 
-func newExportCmd() *cobra.Command {
+//=============================================================================
+
+func NewExportCmd() *cobra.Command {
 	o := &exportOptions{}
 
 	cmd := &cobra.Command{
@@ -55,7 +58,7 @@ func newExportCmd() *cobra.Command {
 		},
 	}
 
-	addConnFlags(cmd, &o.connOptions)
+	command.AddConnFlags(cmd, &o.ConnOptions)
 	cmd.Flags().StringVar(&o.query, "query", "", "query to export (alternative to --table)")
 	cmd.Flags().StringVar(&o.table, "table", "", "table to export (alternative to --query)")
 	cmd.Flags().StringVar(&o.file, "file", "", "output DDF file ('-' for stdout, default '<table>.ddf')")
@@ -87,9 +90,9 @@ func runExport(o *exportOptions) error {
 	}
 
 	useCompression := o.compress || strings.HasSuffix(file, ".gz")
-	o.resolvePort()
+	o.ResolvePort()
 
-	db, err := connect(&o.connOptions)
+	db, err := command.Connect(&o.ConnOptions)
 	if err != nil {
 		return err
 	}
@@ -97,8 +100,8 @@ func runExport(o *exportOptions) error {
 
 	count, err := ddf.Export(context.Background(), ddf.ExportConfig{
 		DB:             db,
-		IsPostgres:     o.dbType == "postgres",
-		DBName:         o.database,
+		IsPostgres:     o.DbType == "postgres",
+		DBName:         o.Database,
 		Query:          query,
 		FileName:       file,
 		UseCompression: useCompression,
