@@ -27,6 +27,7 @@ package import_
 import (
 	"bufio"
 	"compress/gzip"
+	"database/sql"
 	"errors"
 	"io"
 	"log/slog"
@@ -104,6 +105,25 @@ func runImport(o *importOptions) error {
 
 	slog.Info("Import completed", "file", o.file, "rows", count)
 	return nil
+}
+
+//=============================================================================
+// ExecuteDDFFile applies the rows of a DDF file to the database, aborting on
+// the first failing row. Compression is auto-detected.
+//=============================================================================
+
+func ExecuteDDFFile(db *sql.DB, isPostgres bool, file string) error {
+	r, closeInput, err := openInput(file, false)
+	if err != nil {
+		return err
+	}
+	defer closeInput()
+
+	_, err = ddf.Import(ddf.ImportConfig{
+		DB:         db,
+		IsPostgres: isPostgres,
+	}, r, false)
+	return err
 }
 
 //=============================================================================

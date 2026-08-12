@@ -22,36 +22,49 @@
 // DEALINGS IN THE SOFTWARE.
 //=============================================================================
 
-package main
+package migrate
 
-import (
-	"log/slog"
-	"os"
-
-	"github.com/algotiqa/data-sync/pkg/command/export"
-	import_ "github.com/algotiqa/data-sync/pkg/command/import"
-	"github.com/algotiqa/data-sync/pkg/command/migrate"
-	"github.com/algotiqa/data-sync/pkg/command/run"
-	"github.com/spf13/cobra"
-)
+import "testing"
 
 //=============================================================================
 
-func main() {
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, nil)))
-
-	rootCmd := &cobra.Command{
-		Use  : "data-sync",
-		Short: "Import and export database table data in the DDF format",
+func TestParseMigrationFile(t *testing.T) {
+	cases := []struct {
+		name    string
+		version int
+		kind    string
+		wantErr bool
+	}{
+		{name: "001_create_users.sql", version: 1, kind: ".sql"},
+		{name: "002_seed_data.ddf", version: 2, kind: ".ddf"},
+		{name: "10_zoo.sql", version: 10, kind: ".sql"},
+		{name: "1_000_leading.ddf", version: 1, kind: ".ddf"},
+		{name: "create_users.sql", wantErr: true},
+		{name: "001_users.txt", wantErr: true},
+		{name: "_users.sql", wantErr: true},
+		{name: "a_users.sql", wantErr: true},
+		{name: "001_users.ddf.gz", wantErr: true},
 	}
 
-	rootCmd.AddCommand(export .NewExportCmd())
-	rootCmd.AddCommand(import_.NewImportCmd())
-	rootCmd.AddCommand(run    .NewRunCmd())
-	rootCmd.AddCommand(migrate.NewMigrateCmd())
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			version, kind, err := parseMigrationFile(c.name)
 
-	if err := rootCmd.Execute(); err != nil {
-		os.Exit(1)
+			if c.wantErr {
+				if err == nil {
+					t.Fatalf("expected an error, got version=%d kind=%q", version, kind)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if version != c.version || kind != c.kind {
+				t.Errorf("parseMigrationFile(%q) = %d, %q; want %d, %q", c.name, version, kind, c.version, c.kind)
+			}
+		})
 	}
 }
 

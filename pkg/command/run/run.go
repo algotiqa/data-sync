@@ -26,6 +26,7 @@ package run
 
 import (
 	"bufio"
+	"database/sql"
 	"errors"
 	"fmt"
 	"io"
@@ -94,17 +95,46 @@ func runRun(o *runOptions) error {
 		return nil
 	}
 
-	for i, statement := range statements {
-		if _, err = db.Exec(statement); err != nil {
-			return fmt.Errorf("statement %d of %d failed: %w", i+1, len(statements), err)
-		}
-
-		if (i+1)%100 == 0 {
-			slog.Info("Statements executed", "count", i+1)
-		}
+	if err := ExecuteStatements(db, statements); err != nil {
+		return err
 	}
 
 	slog.Info("Run completed", "file", o.file, "statements", len(statements))
+	return nil
+}
+
+//=============================================================================
+// ExecuteSQLFile parses the given SQL file and executes its statements,
+// aborting on the first failing one.
+//=============================================================================
+
+func ExecuteSQLFile(db *sql.DB, file string) error {
+	r, closeInput, err := openScript(file)
+	if err != nil {
+		return err
+	}
+	defer closeInput()
+
+	statements, err := parseStatements(r)
+	if err != nil {
+		return err
+	}
+
+	return ExecuteStatements(db, statements)
+}
+
+//=============================================================================
+// ExecuteStatements executes the given SQL statements one by one, aborting on
+// the first failing one.
+//=============================================================================
+
+func ExecuteStatements(db *sql.DB, statements []string) error {
+	for i, statement := range statements {
+		if _, err := db.Exec(statement); err != nil {
+			return fmt.Errorf("statement %d of %d failed: %w", i+1, len(statements), err)
+		}
+	}
+
 	return nil
 }
 
